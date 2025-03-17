@@ -1,6 +1,6 @@
 <?php
 
-namespace Akash\LaravelGitHubAPIs;
+namespace Akashverma3333\LaravelGitHubAPIs;
 
 use Illuminate\Support\ServiceProvider;
 
