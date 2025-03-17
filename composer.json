@@ -1,0 +1,19 @@
+{
+    "name": "akash/laravelgithubapis",
+    "description": "A package to interact with GitHub API without Git installed.",
+    "autoload": {
+        "psr-4": {
+            "Akash\\LaravelGitHubAPIs\\": "src/"
+        }
+    },
+    "require": {
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Akash\\LaravelGitHubAPIs\\GitHubAPIServiceProvider"
+            ]
+        }
+    }
+}
