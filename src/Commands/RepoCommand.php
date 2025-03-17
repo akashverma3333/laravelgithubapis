@@ -1,34 +1,54 @@
 <?php
 
-namespace Akashverma3333\LaravelGitHubAPIs\Commands;
+namespace Akashverma3333\LaravelGitHubAPIs\Console\Commands;
 
 use Illuminate\Console\Command;
 use GuzzleHttp\Client;
 
 class RepoCommand extends Command
 {
-    protected $signature = 'repo {repo}';
-    protected $description = 'Fetch repository details from GitHub using the GitHub API';
+    protected $signature = 'repo';
+    protected $description = 'Fetch all GitHub repositories for the authenticated user';
+
+    public function __construct()
+    {
+        parent::__construct();
+    }
 
     public function handle()
     {
-        $repo = $this->argument('repo');
+        $username = env('GITHUB_USERNAME');
         $token = env('GITHUB_TOKEN');
-        $client = new Client();
 
+        if (!$username || !$token) {
+            $this->error('GitHub username or token is not set in .env file.');
+            return;
+        }
+
+        // Set up the HTTP client
         try {
-            $response = $client->get("https://api.github.com/repos/{$repo}", [
-                'headers' => [
-                    'Authorization' => "Bearer {$token}",
-                ]
+            $client = new Client();
+            $response = $client->get('https://api.github.com/user/repos', [
+                'auth' => [$username, $token]
             ]);
 
-            $repoData = json_decode($response->getBody(), true);
-            $this->info("Repository: {$repoData['name']}");
-            $this->info("Description: {$repoData['description']}");
-            $this->info("Stars: {$repoData['stargazers_count']}");
+            // Check for successful response
+            if ($response->getStatusCode() === 200) {
+                $repositories = json_decode($response->getBody(), true);
+
+                if (count($repositories) === 0) {
+                    $this->info('No repositories found.');
+                } else {
+                    $this->info('Repositories:');
+                    foreach ($repositories as $repo) {
+                        $this->info($repo['full_name']);
+                    }
+                }
+            } else {
+                $this->error('Failed to fetch repositories. Response: ' . $response->getBody());
+            }
         } catch (\Exception $e) {
-            $this->error("Failed to fetch repo data: " . $e->getMessage());
+            $this->error('Error connecting to GitHub: ' . $e->getMessage());
         }
     }
 }
