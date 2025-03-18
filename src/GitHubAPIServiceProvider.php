@@ -8,9 +8,7 @@ class GitHubAPIServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        $this->commands([
-            \Akashverma3333\LaravelGitHubAPIs\Commands\LoginCommand::class,
-        ]);
+       
         // Register any bindings or services you need here.
     }
 
