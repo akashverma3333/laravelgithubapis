@@ -1,6 +1,6 @@
 <?php
 
-namespace Bhavneeshgoyal99\LaravelGitHub\Commands;
+namespace Akashverma3333\LaravelGitHubAPIs\Commands;
 
 use Illuminate\Console\Command;
 
