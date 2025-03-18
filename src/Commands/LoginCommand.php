@@ -4,14 +4,13 @@ namespace Akashverma3333\LaravelGitHubAPIs\Commands;
 
 use Illuminate\Console\Command;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
 
 class LoginCommand extends Command
 {
-    // Command signature to make it callable via `php artisan login`
     protected $signature = 'login';
-
-    // Command description to be shown in the list of commands
-    protected $description = 'Login to GitHub using stored credentials';
+    protected $description = 'Login to GitHub and store credentials in .env file';
 
     public function __construct()
     {
@@ -20,31 +19,80 @@ class LoginCommand extends Command
 
     public function handle()
     {
-        // Retrieve GitHub username and token from the .env file
-        $username = env('GITHUB_USERNAME');
-        $token = env('GITHUB_TOKEN');
+        // Check if credentials already exist in .env
+        $existingUsername = env('GITHUB_USERNAME');
+        $existingToken = env('GITHUB_TOKEN');
 
-        // Check if both the username and token are set in the .env file
-        if (!$username || !$token) {
-            $this->error('GitHub username or token is not set in .env file.');
+        if ($existingUsername && $existingToken) {
+            $this->info('You are already logged in as ' . $existingUsername);
             return;
         }
 
-        // Create a Guzzle HTTP client to interact with the GitHub API
+        // Ask for GitHub username and token
+        $username = $this->ask('Enter your GitHub username');
+        $token = $this->secret('Enter your GitHub personal access token');
+
+        if (!$username || !$token) {
+            $this->error('GitHub username or token cannot be empty.');
+            return;
+        }
+
+        // Verify the GitHub token
         try {
             $client = new Client();
             $response = $client->get('https://api.github.com/user', [
                 'auth' => [$username, $token]
             ]);
 
-            // Check if the response is successful (status code 200)
-            if ($response->getStatusCode() === 200) {
-                $this->info('Logged in successfully as ' . $username);
-            } else {
+            if ($response->getStatusCode() !== 200) {
                 $this->error('Invalid GitHub token.');
+                return;
             }
+
+            // Store credentials in the .env file
+            $this->updateEnvFile($username, $token);
+
+            // **Manually reload environment variables**
+            $this->reloadEnv();
+
+            $this->info('Logged in successfully as ' . $username);
         } catch (\Exception $e) {
             $this->error('Error connecting to GitHub: ' . $e->getMessage());
         }
+    }
+
+    private function updateEnvFile($username, $token)
+    {
+        $envFile = base_path('.env');
+
+        if (!file_exists($envFile)) {
+            $this->error('.env file not found.');
+            return;
+        }
+
+        // Read the existing .env file
+        $envContent = file_get_contents($envFile);
+
+        // Remove old credentials if they exist
+        $envContent = preg_replace('/^GITHUB_USERNAME=.*/m', '', $envContent);
+        $envContent = preg_replace('/^GITHUB_TOKEN=.*/m', '', $envContent);
+
+        // Append new credentials
+        file_put_contents($envFile, $envContent . "\nGITHUB_USERNAME={$username}\nGITHUB_TOKEN={$token}\n");
+    }
+
+    private function reloadEnv()
+    {
+        // **Clear Laravel configuration cache**
+        Artisan::call('config:clear');
+        Artisan::call('cache:clear');
+
+        // **Reload environment variables manually**
+        $dotenv = \Dotenv\Dotenv::createImmutable(base_path());
+        $dotenv->load();
+
+        // **Update Laravel config in runtime**
+        Config::set('github.username', env('GITHUB_USERNAME'));
+        Config::set('github.token', env('GITHUB_TOKEN'));
     }
 }
