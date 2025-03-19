@@ -29,12 +29,16 @@ Saved GitHub Commands:
    php artisan show-branch <user id>/<repo> <branch>
    example:php artisan show-branch akashverma3333/laravelgithubapis main 
 
-4. Edit a file in VS Code:
+6. Edit a file in VS Code:
    php artisan edit-branch-file <user id>/<repo> <branch> <file-path>
    example:php artisan edit-branch-file akashverma3333/laravelgithubapis main src/Commands/RepoCommand.php
 
-5. Save all Git commands for reference:
+7. Save all Git commands for reference:
    php artisan showallcommands
+
+8. Branch Checkout
+   php artisan branch:checkout <user id>/<repo> <branch>
+   example:php artisan branch:checkout akashverma3333/laravelgithubapis main
 EOT;
 
         $this->info($helpText);
