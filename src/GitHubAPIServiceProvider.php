@@ -22,6 +22,7 @@ class GitHubAPIServiceProvider extends ServiceProvider
                 \Akashverma3333\LaravelGitHubAPIs\Commands\ShowBranchContentCommand::class, 
                 \Akashverma3333\LaravelGitHubAPIs\Commands\EditBranchFileCommand::class,
                 \Akashverma3333\LaravelGitHubAPIs\Commands\ShowGitHelpCommand::class,
+                \Akashverma3333\LaravelGitHubAPIs\Commands\CheckoutBranchCommand::class,
             ]);
         }
     }
