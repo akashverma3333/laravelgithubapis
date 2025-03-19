@@ -1,6 +1,6 @@
 <?php
 
-namespace LaravelGitHubAPIs\Commands;
+namespace Akashverma3333LaravelGitHubAPIs\Commands;
 
 use Illuminate\Console\Command;
 use GuzzleHttp\Client;
