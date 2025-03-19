@@ -3,7 +3,7 @@
     "description": "A package to interact with GitHub API without Git installed.",
     "autoload": {
         "psr-4": {
-            "Akashverma3333\\LaravelGitHubAPIs\\": "src/"
+            "LaravelGitHubAPIs\\": "src/"
         }
     },
     "require": {
