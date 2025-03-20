@@ -1,9 +1,9 @@
 {
-    "name": "laravelgithubapis",
+    "name": "akashverma3333/laravelgithubapis",
     "description": "A package to interact with GitHub API without Git installed.",
     "autoload": {
         "psr-4": {
-            "LaravelGitHubAPIs\\": "src/"
+            "Akashverma3333\\LaravelGitHubAPIs\\": "src/"
         }
     },
     "require": {
@@ -12,7 +12,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "LaravelGitHubAPIs\\GitHubAPIServiceProvider"
+                "Akashverma3333\\LaravelGitHubAPIs\\GitHubAPIServiceProvider"
             ]
         }
     }
