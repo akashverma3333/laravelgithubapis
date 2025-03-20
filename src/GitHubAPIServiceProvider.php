@@ -15,6 +15,7 @@ class GitHubAPIServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) { // Ensure commands only register in CLI
             $this->commands([
+
                 \LaravelGitHubAPIs\Commands\RepoCommand::class,
                 \LaravelGitHubAPIs\Commands\BranchCommand::class,
                 \LaravelGitHubAPIs\Commands\LoginCommand::class,
@@ -22,7 +23,10 @@ class GitHubAPIServiceProvider extends ServiceProvider
                 \LaravelGitHubAPIs\Commands\ShowBranchContentCommand::class, 
                 \LaravelGitHubAPIs\Commands\EditBranchFileCommand::class,
                 \LaravelGitHubAPIs\Commands\ShowGitHelpCommand::class,
+                \LaravelGitHubAPIs\Commands\CreateBranchCommand::class,
                 \LaravelGitHubAPIs\Commands\CheckoutBranchCommand::class,
+                \LaravelGitHubAPIs\Commands\CreatePullRequestCommand::class,
+
             ]);
         }
     }
