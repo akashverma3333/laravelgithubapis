@@ -4,66 +4,114 @@ namespace LaravelGitHubAPIs\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
-
+use Illuminate\Support\Facades\File;
 
 class CreatePullRequestCommand extends Command
 {
     protected $signature = 'create-pr';
-    protected $description = 'Create a new pull request on GitHub and store details in a text file';
+    protected $description = 'Create a GitHub Pull Request with a Markdown file';
 
     public function handle()
     {
-        // Ask for user inputs
-        $ticketId = $this->ask('Enter ticket ID');
-        $owner = $this->ask('Enter GitHub username or organization');
-        $repo = $this->ask('Enter repository name');
-        $baseBranch = $this->ask('Enter base branch (e.g., main, develop)');
-        $headBranch = $this->ask('Enter head branch (feature-branch, fix-bug)');
-        $title = $this->ask('Enter PR Title');
-        $description = $this->ask('Enter PR Description');
+        // Collect User Inputs
+        $ticketId = $this->ask('Enter Ticket ID (used as PR title)');
+        $description = $this->ask('Enter PR description');
+        $assignees = $this->ask('Enter assignees (comma-separated usernames)') ?? '';
+        $reviewers = $this->ask('Enter reviewers (comma-separated usernames)') ?? '';
+        $baseBranch = $this->ask('Enter base branch', 'main');
+        $headBranch = $this->ask('Enter your feature branch');
 
-        // Store in a file (inside storage/app/)
-        $data = [
-            'ticketId' => $ticketId,
-            'owner' => $owner,
-            'repo' => $repo,
-            'baseBranch' => $baseBranch,
-            'headBranch' => $headBranch,
-            'title' => $title,
-            'description' => $description,
-            'created_at' => now()
-        ];
+        // Convert comma-separated lists into arrays
+        $assigneesArray = $assignees ? array_map('trim', explode(',', $assignees)) : [];
+        $reviewersArray = $reviewers ? array_map('trim', explode(',', $reviewers)) : [];
 
-        $filePath = getenv("HOMEPATH") ? getenv("HOMEPATH") . '\pr_details.txt' : 'C:\Users\akash\pr_details.txt';
-        file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
+        // Generate Markdown Content
+        $mdContent = "# PR: $ticketId\n\n";
+        $mdContent .= "## Description\n$description\n\n";
+        
+        $mdContent .= "## Assignees\n";
+        foreach ($assigneesArray as $assignee) {
+            $mdContent .= "- @$assignee\n";
+        }
+        
+        $mdContent .= "\n## Reviewers\n";
+        foreach ($reviewersArray as $reviewer) {
+            $mdContent .= "- @$reviewer\n";
+        }
 
-        $this->info("✅ PR details saved in: $filePath");
+        // Save Markdown File
+        $filePath = storage_path("app/pull_request.md");
+        File::put($filePath, $mdContent);
+        $this->info("📄 Markdown file saved: $filePath");
 
-        // (Optional) If you want to create the PR on GitHub, add API logic here
-        $this->createGitHubPullRequest($owner, $repo, $baseBranch, $headBranch, $title, $description);
-    }
-
-    private function createGitHubPullRequest($owner, $repo, $baseBranch, $headBranch, $title, $description)
-    {
+        // GitHub API Authentication
         $githubToken = env('GITHUB_TOKEN');
-
         if (!$githubToken) {
-            $this->error("❌ GitHub Token not set! Add it in .env as GITHUB_TOKEN");
+            $this->error('❌ GitHub token not found. Set GITHUB_TOKEN in your .env file.');
             return;
         }
 
-        $response = Http::withToken($githubToken)->post("https://api.github.com/repos/$owner/$repo/pulls", [
-            'title' => $title,
-            'head' => $headBranch,
-            'base' => $baseBranch,
-            'body' => $description
-        ]);
+        // Define GitHub Repository
+        $repoOwner = env('GITHUB_OWNER', 'your-github-username');
+        $repoName = env('GITHUB_REPO', 'your-repo-name');
 
-        if ($response->successful()) {
-            $prUrl = $response->json()['html_url'];
-            $this->info("✅ Pull Request Created: $prUrl");
-        } else {
-            $this->error("❌ Failed to create PR: " . json_encode($response->json(), JSON_PRETTY_PRINT));
+        // Step 1: Create Pull Request
+        $prResponse = Http::withToken($githubToken)
+            ->withHeaders([
+                'Accept' => 'application/vnd.github.v3+json',
+                'User-Agent' => 'Laravel-GitHub-Package'
+            ])
+            ->post("https://api.github.com/repos/$repoOwner/$repoName/pulls", [
+                'title' => $ticketId,
+                'body' => $mdContent,
+                'head' => $headBranch,
+                'base' => $baseBranch,
+            ]);
+
+        // Check if PR was created successfully
+        if (!$prResponse->successful()) {
+            $this->error("❌ Failed to create pull request. Error: " . json_encode($prResponse->json(), JSON_PRETTY_PRINT));
+            return;
+        }
+
+        // Extract PR Number
+        $prNumber = $prResponse->json()['number'];
+        $prUrl = "https://github.com/$repoOwner/$repoName/pull/$prNumber";
+        $this->info("✅ Pull request created successfully! PR Number: $prNumber");
+        $this->info("🔗 Check it on GitHub: $prUrl");
+        
+
+        // Step 2: Assign Users to PR
+        if (!empty($assigneesArray)) {
+            $assignResponse = Http::withToken($githubToken)
+                ->post("https://api.github.com/repos/$repoOwner/$repoName/issues/$prNumber/assignees", [
+                    'assignees' => $assigneesArray,
+                ]);
+
+            if ($assignResponse->successful()) {
+                $this->info("✅ Assignees added successfully!");
+            } else {
+                $this->error("⚠️ Failed to add assignees. Error: " . json_encode($assignResponse->json(), JSON_PRETTY_PRINT));
+            }
+        }
+
+        // Step 3: Add Reviewers to PR (Updated Fix)
+        if (!empty($reviewersArray)) {
+            $reviewResponse = Http::withToken($githubToken)
+                ->post("https://api.github.com/repos/$repoOwner/$repoName/pulls/$prNumber/requested_reviewers", [
+                    'reviewers' => $reviewersArray,
+                ]);
+
+            if ($reviewResponse->successful()) {
+                $this->info("✅ Reviewers added successfully!");
+            } else {
+                $errorData = $reviewResponse->json();
+                if (isset($errorData['message']) && str_contains($errorData['message'], 'only be requested from collaborators')) {
+                    $this->warn("⚠️ Some reviewers were not added because they are not collaborators.");
+                } else {
+                    $this->warn("⚠️ Failed to add reviewers. Error: " . json_encode($errorData, JSON_PRETTY_PRINT));
+                }
+            }
         }
     }
 }
