@@ -1,6 +1,6 @@
 <?php
 
-namespace LaravelGitHubAPIs;
+namespace Akashverma3333\LaravelGitHubAPIs;
 
 use Illuminate\Support\ServiceProvider;
 
@@ -16,16 +16,16 @@ class GitHubAPIServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) { // Ensure commands only register in CLI
             $this->commands([
 
-                \LaravelGitHubAPIs\Commands\RepoCommand::class,
-                \LaravelGitHubAPIs\Commands\BranchCommand::class,
-                \LaravelGitHubAPIs\Commands\LoginCommand::class,
-                \LaravelGitHubAPIs\Commands\LogoutCommand::class,
-                \LaravelGitHubAPIs\Commands\ShowBranchContentCommand::class, 
-                \LaravelGitHubAPIs\Commands\EditBranchFileCommand::class,
-                \LaravelGitHubAPIs\Commands\ShowGitHelpCommand::class,
-                \LaravelGitHubAPIs\Commands\CreateBranchCommand::class,
-                \LaravelGitHubAPIs\Commands\CheckoutBranchCommand::class,
-                \LaravelGitHubAPIs\Commands\CreatePullRequestCommand::class,
+                \Akashverma3333\LaravelGitHubAPIs\Commands\RepoCommand::class,
+                \Akashverma3333\LaravelGitHubAPIs\Commands\BranchCommand::class,
+                \Akashverma3333\LaravelGitHubAPIs\Commands\LoginCommand::class,
+                \Akashverma3333\LaravelGitHubAPIs\Commands\LogoutCommand::class,
+                \Akashverma3333\LaravelGitHubAPIs\Commands\ShowBranchContentCommand::class, 
+                \Akashverma3333\LaravelGitHubAPIs\Commands\EditBranchFileCommand::class,
+                \Akashverma3333\LaravelGitHubAPIs\Commands\ShowGitHelpCommand::class,
+                \Akashverma3333\LaravelGitHubAPIs\Commands\CreateBranchCommand::class,
+                \Akashverma3333\LaravelGitHubAPIs\Commands\CheckoutBranchCommand::class,
+                \Akashverma3333\LaravelGitHubAPIs\Commands\CreatePullRequestCommand::class,
 
             ]);
         }
