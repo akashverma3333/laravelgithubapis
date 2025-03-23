@@ -46,6 +46,9 @@ Saved GitHub Commands:
 
 10. Create a Pull Request:
     php artisan github:create-pull-request
+
+11. Show git help:
+    php artisan show-git-help
 EOT;
 
         $this->info($helpText);
