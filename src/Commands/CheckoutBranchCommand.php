@@ -12,7 +12,6 @@ class CheckoutBranchCommand extends Command
 
     public function handle()
     {
-        // ✅ Check if Git is installed before proceeding
         if (!$this->isGitInstalled()) {
             return;
         }
@@ -20,7 +19,6 @@ class CheckoutBranchCommand extends Command
         $repository = $this->argument('repository');
         $branch = $this->argument('branch');
 
-        // Your logic to checkout the branch
         $this->checkoutBranch($repository, $branch);
     }
 
@@ -31,87 +29,59 @@ class CheckoutBranchCommand extends Command
         $process->run();
 
         if ($process->isSuccessful()) {
-            $this->info("✅ Git is already installed on your system.");
+            $this->info("✅ Git is installed.");
             return true;
         }
 
         $this->error("❌ Git is not installed.");
-        if ($this->confirm("Do you want to install Git now?")) {
-            $this->installGit();
-        }
-
         return false;
     }
 
-    // ✅ Install Git automatically
-    private function installGit()
-    {
-        $this->info("Installing Git...");
-    
-        if (PHP_OS_FAMILY === 'Windows') {
-            $installerUrl = "https://git-scm.com/download/win";
-    
-            $this->warn("Automatic installation is not possible. Please install Git manually from: $installerUrl");
-            return;
-        }
-    
-        // For Linux/macOS
-        $process = new Process(['sudo', 'apt-get', 'install', '-y', 'git']);
-        $process->run();
-    
-        if ($process->isSuccessful()) {
-            $this->info("✅ Git installed successfully! Please restart your terminal and try again.");
-        } else {
-            $this->error("❌ Failed to install Git. Please install it manually.");
-        }
-    }
-    
-
-    // ✅ Checkout branch logic (modify as needed)
+    // ✅ Checkout branch logic with proper error handling
     private function checkoutBranch($repo, $branch)
     {
-        $repoName = basename($repo); 
-        $repoPath = base_path($repoName);
-    
-        // 🔍 Check if the repository folder exists
-        if (!is_dir($repoPath)) {
-            $this->error("❌ Repository folder '$repoPath' not found.");
-            
-            // 🔄 Ask the user if they want to clone it
-            if ($this->confirm("Do you want to clone '$repo' now?")) {
-                $this->cloneRepository($repo);
-            } else {
-                return;
-            }
+        $repoPath = getcwd(); // Get current working directory
+
+        if (!is_dir($repoPath . '/.git')) {
+            $this->error("❌ Not a valid Git repository: '$repoPath'");
+            return;
         }
-    
+
+        // 🔄 Fetch latest branches
+        $this->info("🔄 Fetching latest branches...");
+        (new Process(['git', 'fetch', '--all']))->setWorkingDirectory($repoPath)->run();
+
+        // 🔍 Check for uncommitted changes
+        $statusProcess = new Process(['git', 'status', '--porcelain']);
+        $statusProcess->setWorkingDirectory($repoPath);
+        $statusProcess->run();
+
+        if (!empty($statusProcess->getOutput())) {
+            $this->warn("⚠️ Uncommitted changes detected! Stashing changes...");
+            (new Process(['git', 'stash']))->setWorkingDirectory($repoPath)->run();
+        }
+
         // 🔄 Attempt to checkout the branch
-        $process = new Process(['git', 'checkout', $branch], $repoPath);
-        $process->run();
-    
-        if ($process->isSuccessful()) {
-            $this->info("✅ Successfully switched to branch: $branch");
+        $this->info("🔄 Checking out branch: $branch...");
+        $checkoutProcess = new Process(['git', 'checkout', $branch]);
+        $checkoutProcess->setWorkingDirectory($repoPath);
+        $checkoutProcess->run();
+
+        if ($checkoutProcess->isSuccessful()) {
+            $this->info("✅ Switched to branch: $branch");
+            return;
+        }
+
+        // 🔄 If checkout fails, try creating/tracking remote branch
+        $this->warn("⚠️ Checkout failed. Trying to track remote branch...");
+        $trackProcess = new Process(['git', 'checkout', '-B', $branch, "origin/$branch"]);
+        $trackProcess->setWorkingDirectory($repoPath);
+        $trackProcess->run();
+
+        if ($trackProcess->isSuccessful()) {
+            $this->info("✅ Successfully switched to remote-tracked branch: $branch");
         } else {
-            $this->error("❌ Failed to checkout to branch: $branch. Make sure it exists.");
+            $this->error("❌ Failed to checkout branch: $branch. Make sure it exists.");
         }
     }
-    private function cloneRepository($repo)
-{
-    $repoName = basename($repo);
-    $repoURL = "https://github.com/$repo.git";
-    $repoPath = base_path($repoName);
-
-    $this->info("🔄 Cloning repository: $repoURL ...");
-
-    $process = new Process(['git', 'clone', $repoURL, $repoPath]);
-    $process->run();
-
-    if ($process->isSuccessful()) {
-        $this->info("✅ Repository '$repo' cloned successfully!");
-    } else {
-        $this->error("❌ Failed to clone repository '$repo'. Check your internet connection or repo access.");
-    }
-}
-
-    
 }

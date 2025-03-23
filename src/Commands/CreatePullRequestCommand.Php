@@ -31,7 +31,12 @@ class CreatePullRequestCommand extends Command
         $title = $this->ask('Enter PR Title');
         $description = $this->ask('Enter Description');
         $featureBranch = $this->ask('Enter Feature Branch');
-        $baseBranch = $this->ask('Enter Base Branch (default: main)', 'main');
+          // Get the default branch dynamically
+          $defaultBranch = $this->getDefaultBranch($repo, $githubToken);
+          $baseBranch = $this->ask('Enter Base Branch (default: ' . $defaultBranch . ')', $defaultBranch);
+  
+          $username = $this->getGitHubUsername($githubToken);
+          $url = "https://github.com/$repo/compare/$baseBranch...$featureBranch";
 
         $username = $this->getGitHubUsername($githubToken);
         $url = "https://github.com/$repo/compare/$baseBranch...$featureBranch";
@@ -103,6 +108,14 @@ class CreatePullRequestCommand extends Command
 
         return $response->successful();
     }
+
+    private function getDefaultBranch($repo, $githubToken)
+    {
+    $response = Http::withToken($githubToken)->get("https://api.github.com/repos/$repo");
+
+    return $response->successful() ? $response->json()['default_branch'] : 'main';
+    }
+
 
     private function createBranchOnGitHub($repo, $branch, $baseBranch, $githubToken)
     {

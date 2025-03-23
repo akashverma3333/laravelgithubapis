@@ -45,7 +45,7 @@ Saved GitHub Commands:
    example:php artisan create-branch akashverma3333/laravelgithubapis new-branch main
 
 10. Create a Pull Request:
-    php artisan create-pr
+    php artisan github:create-pull-request
 EOT;
 
         $this->info($helpText);
